@@ -73,8 +73,16 @@ app.post('/articles', (request, response) => {
 
   function queryThree(author_id) {
     client.query(
-      ``,
-      [],
+      `INSERT INTO
+      articles (author_id, title, category, "publisedOn", body)
+      VALUES ($1, $2, $3, $4, $5);`,
+      [
+        author_id,
+        request.body.title,
+        request.body.category,
+        request.body.publishedOn,
+        request.body.body
+      ],
       function(err) {
         if (err) console.error(err);
         response.send('insert complete');

@@ -42,7 +42,7 @@ app.post('/articles', (request, response) => {
   client.query(
     `INSERT INTO authors(author, "authorUrl")
      VALUES ($1, $2)
-     ON CONFLIC DO NOTHING;`,
+     ON CONFLICT DO NOTHING;`,
     [request.body.author, request.body.authorUrl],
 
     function(err) {
@@ -89,13 +89,34 @@ app.post('/articles', (request, response) => {
 
 app.put('/articles/:id', function(request, response) {
   client.query(
-    ``,
-    []
+    `UPDATE authors
+    SET 
+      author=$1,
+      "authorUrl"=$2
+    WHERE author_id=$3;`,
+    [
+      request.body.author,
+      request.body.authorUrl,
+      request.body.author_id
+    ]
   )
     .then(() => {
       client.query(
-        ``,
-        []
+        `
+        UPDATE articles
+        SET
+          title=$1,
+          category=$2,
+          body=$3,
+          "publishedOn"=$4
+        WHERE article_id=$5;`,
+        [
+          request.body.title,
+          request.body.category,
+          request.body.body,
+          request.body.publishedOn,
+          request.params.id
+        ]
       )
     })
     .then(() => {

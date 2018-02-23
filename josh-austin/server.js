@@ -40,7 +40,8 @@ app.post('/articles', (request, response) => {
     authors(author, "authorUrl")
     VALUES ($1, $2);
     `,
-    [ request.body.author,
+    [
+      request.body.author,
       request.body.authorUrl
     ],
     function(err) {
@@ -54,7 +55,8 @@ app.post('/articles', (request, response) => {
     client.query(
       `SELECT author_id FROM authors WHERE author=$1;
       `,
-      [ request.body.author
+      [
+        request.body.author
       ],
       function(err, result) {
         if (err) console.error(err);
@@ -71,7 +73,8 @@ app.post('/articles', (request, response) => {
       articles(title, author_id, category, "publishedOn", body)
       VALUES ($1, $2, $3, $4, $5);
       `,
-      [ request.body.title,
+      [
+        request.body.title,
         author_id,
         request.body.category,
         request.body.publishedOn,
@@ -87,13 +90,23 @@ app.post('/articles', (request, response) => {
 
 app.put('/articles/:id', function(request, response) {
   client.query(
-    ``,
-    []
+    `UPDATE authors SET author=$1, "authorUrl"=$2 WHERE author_id=$3;`,
+    [
+      request.body.author,
+      request.body.authorUrl,
+      request.params.id
+    ]
   )
     .then(() => {
       client.query(
-        ``,
-        []
+        `UPDATE articles SET title=$1, category=$2, "publishedOn"=$3, body=$4 WHERE author_id=$5;`,
+        [
+          request.body.title,
+          request.body.category,
+          request.body.publishedOn,
+          request.body.body,
+          request.params.id
+        ]
       )
     })
     .then(() => {
@@ -164,7 +177,7 @@ function loadArticles() {
             FROM authors
             WHERE author=$5;
             `,
-              [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
+            [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
             )
           })
         })

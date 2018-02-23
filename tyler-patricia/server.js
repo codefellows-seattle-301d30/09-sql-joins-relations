@@ -39,7 +39,7 @@ app.get('/articles', (request, response) => {
 // Insert an author and pass the author and authorUrl as data for the query. On conflict, do nothing.
 app.post('/articles', (request, response) => {
   client.query(
-    'INSERT INTO authors(author, "authorUrl") VALUES ($1, $2) ON CONFLICT DO NOTHING',
+    'INSERT INTO authors(author, "authorUrl") VALUES ($1, $2) ON CONFLICT DO NOTHING;',
     [request.body.author, request.body.authorUrl],
     function(err) {
       if (err) console.error(err);
@@ -50,10 +50,10 @@ app.post('/articles', (request, response) => {
 
   // LAB - In the second query, add the SQL commands to retrieve a single author from the authors table. Add the author name as data for the query.
   function queryTwo() {
-   // come back to this, mad fuzzy
+    // come back to this, mad fuzzy
     client.query(
-      `SELECT FROM authors WHERE author_id=$1;`,
-      [request.params.id],
+      `SELECT author_id FROM authors WHERE author=$1;`,
+      [request.body.author],
       function(err, result) {
         if (err) console.error(err);
 
@@ -63,12 +63,16 @@ app.post('/articles', (request, response) => {
     )
   }
 
-  // LAB - In the third query, add the SQL commands to insert the new article using the author_id from the second query. Add the data from the new article, including the author_id, as data for the SQL query.
+  // LAB -DONE- In the third query, add the SQL commands to insert the new article using the author_id from the second query. Add the data from the new article, including the author_id, as data for the SQL query.
   function queryThree(author_id) {
     client.query(
-      `INSERT INTO articles(
+      `INSERT INTO articles(author_id, title, category, "publishedOn", body) VALUES ($1, $2, $3, $4, $5);
        `,
-      [],
+      [author_id,
+        request.body.title,
+        request.body.category,
+        request.body.publishedOn,
+        request.body.body],
       function(err) {
         if (err) console.error(err);
         response.send('insert complete');
@@ -77,20 +81,26 @@ app.post('/articles', (request, response) => {
   }
 });
 
-/* 
+/* DONE....?
 Write a SQL query to update an author record and article record.
 - Remember that the articles now have an author_id property, so we can reference it from the request.body. Add the required values from the request as data for the SQL query to interpolate.
 - After the author has been updated, you will then need to update an article record. Remember that the article records now have an author_id, in addition to title, category, publishedOn, and body. Add the required values from the request as data for the SQL query to interpolate.
 */
 app.put('/articles/:id', function(request, response) {
   client.query(
-    ``,
-    []
+    `UPDATE authors SET author=$1, "authorUrl"=$2 WHERE author_id=$3;`,
+    [request.body.author,
+      request.body.authorUrl,
+      request.body.author_id]
   )
     .then(() => {
       client.query(
-        ``,
-        []
+        `UPDATE articles SET title=$1, category=$2, "publishedOn"=$3, body=$4 WHERE author_id=$5;`,
+        [request.body.title,
+          request.body.category,
+          request.body.publishedOn,
+          request.body.body,
+          request.body.author_id]
       )
     })
     .then(() => {
@@ -161,7 +171,7 @@ function loadArticles() {
             FROM authors
             WHERE author=$5;
             `,
-              [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
+            [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
             )
           })
         })

@@ -47,14 +47,14 @@ app.post('/articles', (request, response) => {
     function(err) {
       if (err) console.error(err);
       // REVIEW: This is our second query, to be executed when this first query is complete.
-      queryTwo();
+      queryTwo(request.body.author);
     }
   )
 
-  function queryTwo() {
+  function queryTwo(author) {
     client.query(
-      ``,
-      [],
+      `SELECT * FROM authors WHERE author=$1;`,
+      [author],
       function(err, result) {
         if (err) console.error(err);
 
@@ -67,13 +67,12 @@ app.post('/articles', (request, response) => {
   function queryThree(author_id) {
     client.query(
       `INSERT INTO
-      articles(title, author, "authorUrl", category, "publishedOn", body)
-      VALUES ($1, $2, $3, $4, $5, $6);
+      articles( author_id, title, category, "publishedOn", body)
+      VALUES ($1, $2, $3, $4, $5);
       `,
       [
+        author_id,
         request.body.title,
-        request.body.author,
-        request.body.authorUrl,
         request.body.category,
         request.body.publishedOn,
         request.body.body

@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
 const app = express();
 
-const conString = '';
+const conString = 'postgres://localhost:5432/articles';
 const client = new pg.Client(conString);
 client.connect();
 client.on('error', error => {
@@ -18,14 +18,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static('./public'));
 
-// REVIEW: These are routes for requesting HTML resources.
+// REVIEW-DONE: These are routes for requesting HTML resources.
 app.get('/new', (request, response) => {
   response.sendFile('new.html', {root: './public'});
 });
 
-// REVIEW: These are routes for making API calls to enact CRUD operations on our database.
+// REVIEW-DONE: These are routes for making API calls to enact CRUD operations on our database.
+// LAB-DONE - Write a SQL query to join all data from articles and authors tables on the author_id value of each when the articles are retrieved.
 app.get('/articles', (request, response) => {
-  client.query(``)
+  client.query(`SELECT * FROM articles INNER JOIN authors ON articles.author_id = authors.author_id;`)
     .then(result => {
       response.send(result.rows);
     })
@@ -34,10 +35,12 @@ app.get('/articles', (request, response) => {
     });
 });
 
+// LAB-DONE - Write a SQL query to create a new article.
+// Insert an author and pass the author and authorUrl as data for the query. On conflict, do nothing.
 app.post('/articles', (request, response) => {
   client.query(
-    '',
-    [],
+    'INSERT INTO authors(author, "authorUrl") VALUES ($1, $2) ON CONFLICT DO NOTHING',
+    [request.body.author, request.body.authorUrl],
     function(err) {
       if (err) console.error(err);
       // REVIEW: This is our second query, to be executed when this first query is complete.
@@ -45,10 +48,12 @@ app.post('/articles', (request, response) => {
     }
   )
 
+  // LAB - In the second query, add the SQL commands to retrieve a single author from the authors table. Add the author name as data for the query.
   function queryTwo() {
+   // come back to this, mad fuzzy
     client.query(
-      ``,
-      [],
+      `SELECT FROM authors WHERE author_id=$1;`,
+      [request.params.id],
       function(err, result) {
         if (err) console.error(err);
 
@@ -58,9 +63,11 @@ app.post('/articles', (request, response) => {
     )
   }
 
+  // LAB - In the third query, add the SQL commands to insert the new article using the author_id from the second query. Add the data from the new article, including the author_id, as data for the SQL query.
   function queryThree(author_id) {
     client.query(
-      ``,
+      `INSERT INTO articles(
+       `,
       [],
       function(err) {
         if (err) console.error(err);
@@ -70,6 +77,11 @@ app.post('/articles', (request, response) => {
   }
 });
 
+/* 
+Write a SQL query to update an author record and article record.
+- Remember that the articles now have an author_id property, so we can reference it from the request.body. Add the required values from the request as data for the SQL query to interpolate.
+- After the author has been updated, you will then need to update an article record. Remember that the article records now have an author_id, in addition to title, category, publishedOn, and body. Add the required values from the request as data for the SQL query to interpolate.
+*/
 app.put('/articles/:id', function(request, response) {
   client.query(
     ``,

@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
 const app = express();
 
-const conString = 'postgres://localhost:5432';
+const conString = 'postgres://localhost:5432/articles';
 const client = new pg.Client(conString);
 client.connect();
 client.on('error', error => {
@@ -25,7 +25,7 @@ app.get('/new', (request, response) => {
 
 // REVIEW: These are routes for making API calls to enact CRUD operations on our database.
 app.get('/articles', (request, response) => {
-  client.query(``)
+  client.query(`SELECT * FROM articles`)
     .then(result => {
       response.send(result.rows);
     })
@@ -36,8 +36,13 @@ app.get('/articles', (request, response) => {
 
 app.post('/articles', (request, response) => {
   client.query(
-    '',
-    [],
+    `INSERT INTO
+    articles(author, "authorUrl")
+    VALUES ($1, $2);`,
+    [
+      request.body.author,
+      request.body.authorUrl,
+    ],
     function(err) {
       if (err) console.error(err);
       // REVIEW: This is our second query, to be executed when this first query is complete.
@@ -47,8 +52,8 @@ app.post('/articles', (request, response) => {
 
   function queryTwo() {
     client.query(
-      ``,
-      [],
+      `SELECT author_id FROM authors`,
+      [request.body.author],
       function(err, result) {
         if (err) console.error(err);
 
@@ -60,7 +65,7 @@ app.post('/articles', (request, response) => {
 
   function queryThree(author_id) {
     client.query(
-      ``,
+      `INSERT INTO article (article_id, author_id)`,
       [],
       function(err) {
         if (err) console.error(err);
@@ -72,7 +77,7 @@ app.post('/articles', (request, response) => {
 
 app.put('/articles/:id', function(request, response) {
   client.query(
-    ``,
+    `UPDATE articles WHERE author_id=`,
     []
   )
     .then(() => {

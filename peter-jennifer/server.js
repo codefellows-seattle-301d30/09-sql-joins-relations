@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
 const app = express();
 
-const conString = '';
+const conString = 'postgre://localhost:5432/articles';
 const client = new pg.Client(conString);
 client.connect();
 client.on('error', error => {
@@ -26,6 +26,7 @@ app.get('/new', (request, response) => {
 // REVIEW: These are routes for making API calls to enact CRUD operations on our database.
 app.get('/articles', (request, response) => {
   client.query(``)
+  
     .then(result => {
       response.send(result.rows);
     })

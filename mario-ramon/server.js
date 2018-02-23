@@ -7,8 +7,8 @@ const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
 const app = express();
 
-// const conString = 'postgres://USER:PASSWORD@HOST:PORT/DBNAME';
-const conString = 'postgres://localhost:5432/articles';
+const conString = 'postgres://postgres:6969@localhost:5432/articles';
+// const conString = 'postgres://localhost:5432/articles';
 const client = new pg.Client(conString);
 client.connect();
 client.on('error', error => {
@@ -37,58 +37,84 @@ app.get('/articles', (request, response) => {
 
 app.post('/articles', (request, response) => {
   client.query(
-    `INSERT INTO articles(title, author, "authorUrl", category, "publishedOn", body) VALUES ($1, $2, $3, $4, $5, $6);
-    `,
-  )
-  function(err) {
-    if (err) console.error(err);
-    // REVIEW: This is our second query, to be executed when this first query is complete.
-    queryTwo();
-  }
-)
+    `INSERT INTO authors(author, "authorUrl") VALUES ($1, $2) ON CONFLICT DO NOTHING;`,
+    [
+      request.body.author,
+      request.body.authorUrl
+    ],
 
-function queryTwo() {
-  client.query(
-    `INSERT INTO authors(author)`,
-    [],
-    function(err, result) {
-      if (err) console.error(err);
-      
-      // REVIEW: This is our third query, to be executed when the second is complete. We are also passing the author_id into our third query.
-      queryThree(result.rows[0].author_id);
-    }
-  )
-}
-
-function queryThree(author_id) {
-  client.query(
-    ``,
-    [],
     function(err) {
       if (err) console.error(err);
-      response.send('insert complete');
+      // REVIEW: This is our second query, to be executed when this first query is complete.
+      queryTwo();
     }
-  );
-}
+  )
+
+
+  function queryTwo() {
+    client.query(
+      `SELECT author_id FROM authors WHERE author=$1`,
+      [
+        request.body.author
+      ],
+      function(err, result) {
+        if (err) console.error(err);
+
+        // REVIEW: This is our third query, to be executed when the second is complete. We are also passing the author_id into our third query.
+        queryThree(result.rows[0].author_id);
+      }
+    )
+  }
+
+  function queryThree(author_id) {
+    console.log(author_id + 'is something');
+    client.query(
+      `INSERT INTO articles(title, author, "authorUrl", category, "publishedOn", body) VALUES ($1, $2, $3, $4, $5, $6);`,
+      [
+        request.body.title,
+        request.body.authorUrl,
+        request.body.category,
+        request.body.publishedOn,
+        request.body.body,
+        author_id
+      ],
+      function(err) {
+        if (err) console.error(err);
+        response.send('insert complete');
+      }
+    );
+  }
 });
 
 app.put('/articles/:id', function(request, response) {
   client.query(
-    ``,
-    []
+    `UPDATE articles SET title=$1, author=$2, "authorUrl"=$3, category=$4, "publishedOn"=$5, body=$6 WHERE article_id=$7`,
+    [
+      request.body.title,
+      request.body.author,
+      request.body.authorUrl,
+      request.body.category,
+      request.body.publishedOn,
+      request.body.body,
+      request.params.id
+    ]
   )
-  .then(() => {
-    client.query(
-      ``,
-      []
-    )
-  })
-  .then(() => {
-    response.send('Update complete');
-  })
-  .catch(err => {
-    console.error(err);
-  })
+    .then(() => {
+      client.query(
+        `UPDATE authors SET author=$1, "authorUrl"=$2 WHERE author_id=$3`,
+        [
+          request.body.author,
+          request.body.authorUrl,
+          request.params.id
+        ]
+      )
+    })
+    .then(() => {
+      response.send('Update complete');
+    })
+    .catch(err => {
+      console.error(err);
+    })
 });
 
 app.delete('/articles/:id', (request, response) => {
@@ -96,22 +122,22 @@ app.delete('/articles/:id', (request, response) => {
     `DELETE FROM articles WHERE article_id=$1;`,
     [request.params.id]
   )
-  .then(() => {
-    response.send('Delete complete');
-  })
-  .catch(err => {
-    console.error(err)
-  });
+    .then(() => {
+      response.send('Delete complete');
+    })
+    .catch(err => {
+      console.error(err)
+    });
 });
 
 app.delete('/articles', (request, response) => {
   client.query('DELETE FROM articles')
-  .then(() => {
-    response.send('Delete complete');
-  })
-  .catch(err => {
-    console.error(err)
-  });
+    .then(() => {
+      response.send('Delete complete');
+    })
+    .catch(err => {
+      console.error(err)
+    });
 });
 
 // REVIEW: This calls the loadDB() function, defined below.
@@ -140,23 +166,23 @@ function loadAuthors() {
 // REVIEW: This helper function will load articles into the DB if the DB is empty.
 function loadArticles() {
   client.query('SELECT COUNT(*) FROM articles')
-  .then(result => {
-    if(!parseInt(result.rows[0].count)) {
-      fs.readFile('./public/data/hackerIpsum.json', 'utf8', (err, fd) => {
-        JSON.parse(fd).forEach(ele => {
-          client.query(`
+    .then(result => {
+      if(!parseInt(result.rows[0].count)) {
+        fs.readFile('./public/data/hackerIpsum.json', 'utf8', (err, fd) => {
+          JSON.parse(fd).forEach(ele => {
+            client.query(`
           INSERT INTO
           articles(author_id, title, category, "publishedOn", body)
           SELECT author_id, $1, $2, $3, $4
           FROM authors
           WHERE author=$5;
           `,
-          [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
-        )
-      })
+              [ele.title, ele.category, ele.publishedOn, ele.body, ele.author]
+            )
+          })
+        })
+      }
     })
-  }
-})
 }
 
 // REVIEW: Below are two queries, wrapped in the loadDB() function, which create separate tables in our DB, and create a relationship between the authors and articles tables.
@@ -169,15 +195,15 @@ function loadDB() {
     author VARCHAR(255) UNIQUE NOT NULL,
     "authorUrl" VARCHAR (255)
   );`
-)
-.then(data => {
-  loadAuthors(data);
-})
-.catch(err => {
-  console.error(err)
-});
+  )
+    .then(data => {
+      loadAuthors(data);
+    })
+    .catch(err => {
+      console.error(err)
+    });
 
-client.query(`
+  client.query(`
 CREATE TABLE IF NOT EXISTS
 articles (
   article_id SERIAL PRIMARY KEY,
@@ -187,13 +213,13 @@ articles (
   "publishedOn" DATE,
   body TEXT NOT NULL
 );`
-)
-.then(data => {
-  loadArticles(data);
-})
-.catch(err => {
-  console.error(err)
-});
+  )
+    .then(data => {
+      loadArticles(data);
+    })
+    .catch(err => {
+      console.error(err)
+    });
 }
 
 // [
@@ -202,5 +228,5 @@ articles (
 //   request.body.authorUrl,
 //   request.body.category,
 //   request.body.publishedOn,
-//   request.body.body   
+//   request.body.body
 // ]

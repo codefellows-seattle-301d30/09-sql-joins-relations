@@ -28,8 +28,7 @@ app.get('/articles', (request, response) => {
   client.query(`
     SELECT * FROM authors
     INNER JOIN articles
-    ON authors.author_id = articles.author_id
-    ON CONFLICT DO NOTHING;
+    ON authors.author_id = articles.author_id;
   `)
     .then(result => {
       response.send(result.rows);
@@ -42,7 +41,8 @@ app.get('/articles', (request, response) => {
 app.post('/articles', (request, response) => {
   client.query(
     `INSERT INTO authors(author, "authorUrl")
-     VALUES ($1, $2);`,
+     VALUES ($1, $2)
+     ON CONFLICT DO NOTHING;`,
     [request.body.author, request.body.authorUrl],
 
     function(err) {
@@ -89,13 +89,34 @@ app.post('/articles', (request, response) => {
 
 app.put('/articles/:id', function(request, response) {
   client.query(
-    ``,
-    []
+    `UPDATE authors
+    SET 
+      author=$1,
+      "authorUrl"=$2
+    WHERE author_id=$3;`,
+    [
+      request.body.author,
+      request.body.authorUrl,
+      request.body.author_id
+    ]
   )
     .then(() => {
       client.query(
-        ``,
-        []
+        `
+        UPDATE articles
+        SET
+          title=$1,
+          category=$2,
+          body=$3,
+          "publishedOn"=$4
+        WHERE article_id=$5;`,
+        [
+          request.body.title,
+          request.body.category,
+          request.body.body,
+          request.body.publishedOn,
+          request.params.id
+        ]
       )
     })
     .then(() => {

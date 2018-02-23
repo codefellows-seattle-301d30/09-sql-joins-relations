@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
 const app = express();
 
-const conString = '';
+const conString = 'postgres://localhost:5432/articles';
 const client = new pg.Client(conString);
 client.connect();
 client.on('error', error => {
@@ -25,7 +25,7 @@ app.get('/new', (request, response) => {
 
 // REVIEW: These are routes for making API calls to enact CRUD operations on our database.
 app.get('/articles', (request, response) => {
-  client.query(``)
+  client.query(`SELECT * FROM articles INNER JOIN authors ON article_id=authors.author_id;`)
     .then(result => {
       response.send(result.rows);
     })
@@ -36,8 +36,14 @@ app.get('/articles', (request, response) => {
 
 app.post('/articles', (request, response) => {
   client.query(
-    '',
-    [],
+    `INSERT INTO
+    authors(author, "authorUrl")
+    VALUES ($1, $2);
+    `,
+    [
+      request.body.author,
+      request.body.authorUrl
+    ],
     function(err) {
       if (err) console.error(err);
       // REVIEW: This is our second query, to be executed when this first query is complete.
@@ -60,8 +66,18 @@ app.post('/articles', (request, response) => {
 
   function queryThree(author_id) {
     client.query(
-      ``,
-      [],
+      `INSERT INTO
+      articles(title, author, "authorUrl", category, "publishedOn", body)
+      VALUES ($1, $2, $3, $4, $5, $6);
+      `,
+      [
+        request.body.title,
+        request.body.author,
+        request.body.authorUrl,
+        request.body.category,
+        request.body.publishedOn,
+        request.body.body
+      ],
       function(err) {
         if (err) console.error(err);
         response.send('insert complete');
@@ -72,8 +88,19 @@ app.post('/articles', (request, response) => {
 
 app.put('/articles/:id', function(request, response) {
   client.query(
-    ``,
-    []
+    `UPDATE articles
+    SET title=$1, author=$2, "authorUrl"=$3, category=$4, "publishedOn"=$5, body=$6
+    WHERE article_id=$7;
+    `,
+    [
+      request.body.title,
+      request.body.author,
+      request.body.authorUrl,
+      request.body.category,
+      request.body.publishedOn,
+      request.body.body,
+      request.params.id
+    ]
   )
     .then(() => {
       client.query(
@@ -103,7 +130,7 @@ app.delete('/articles/:id', (request, response) => {
 });
 
 app.delete('/articles', (request, response) => {
-  client.query('DELETE FROM articles')
+  client.query('DELETE FROM articles;')
     .then(() => {
       response.send('Delete complete');
     })

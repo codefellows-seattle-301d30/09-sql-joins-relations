@@ -1,7 +1,7 @@
 SQL Joins Relations
 
 **Author**: Jose Reyes, D\Steve Starwalt
-**Version**: 1.0.0
+**Version**: 1.0.1
 
 ## Overview
 As a developer, I want to utilize SQL queries so that I can join data together in the database and access it based on specific criteria.
@@ -20,6 +20,7 @@ This app will allowthe user to write and article.  The data etered by the author
          1215 went to the power hour
          1300 back move the put to steve's comp and switched to trroubleshoot
          1330 stooped to submit the lab
+         1735 fixed the put and delete
 
  
 ## Credits and Collaborations

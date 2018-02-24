@@ -25,7 +25,7 @@ app.get('/new', (request, response) => {
 
 // REVIEW: These are routes for making API calls to enact CRUD operations on our database.
 app.get('/articles', (request, response) => {
-  client.query(`SELECT * FROM articles INNER JOIN authors ON articles.author_id = authors.author_id;`)
+  client.query(`SELECT * FROM articles INNER JOIN authors ON articles.author_id=authors.author_id;`)
     .then(result => {
       response.send(result.rows);
     })
@@ -81,21 +81,22 @@ app.post('/articles', (request, response) => {
 
 app.put('/articles/:id', function(request, response) {
   client.query(
-    `UPDATE author SET(author, "authorUrl") VALUES ($1, $2) WHERE author=$1;`,
+    `UPDATE authors SET author=$1, "authorUrl"=$2 WHERE author_id=$3;`,
     [
       request.body.author,
-      request.body.authorUrl
+      request.body.authorUrl,
+      request.body.author_id
     ]
   )
     .then(() => {
       client.query(
-        `UPDATE articles SET (title, category, "publishedOn", body) VALUES ($1, $2, $3, $4,) WHERE article_id=$5;`,
+        `UPDATE articles SET title=$1, category=$2, "publishedOn"=$3, body=$4 WHERE article_id=$5;`,
         [
           request.body.title,
           request.body.category,
           request.body.publishedOn,
           request.body.body,
-          request.param.id
+          request.params.id
         ]
       )
     })
@@ -105,7 +106,21 @@ app.put('/articles/:id', function(request, response) {
     .catch(err => {
       console.error(err);
     })
- });
+});
+
+app.delete('/articles/:id', (request, response) => {
+  client.query('DELETE FROM articles WHERE article_id=$1',
+    [
+      request.params.id
+    ]
+  )
+    .then(() => {
+      response.send('Delete complete');
+    })
+    .catch(err => {
+      console.error(err)
+    });
+});
 
 app.delete('/articles', (request, response) => {
   client.query('DELETE FROM articles')
@@ -116,7 +131,6 @@ app.delete('/articles', (request, response) => {
       console.error(err)
     });
 });
-
 // REVIEW: This calls the loadDB() function, defined below.
 loadDB();
 
